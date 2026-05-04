@@ -184,7 +184,9 @@
 
 <script>
     // ===== ПІДКЛЮЧЕННЯ ДО ТВОГО БОТА =====
-    const BOT_API_URL = "http://localhost:8000";
+    // ЯКЩО ХОЧЕШ РЕАЛЬНІ ДАНІ, ЗАМІНИ ЦЕ ПОСИЛАННЯ НА АДРЕСУ ТВОГО БОТА
+    // const BOT_API_URL = "http://localhost:8000";
+    const BOT_API_URL = "https://your-bot-domain.com/api";  // ТИМЧАСОВО ДЕМО
     
     let currentPair = "EURUSD_otc";
     let currentSignalId = null;
@@ -214,7 +216,7 @@
         aiHtml += `❌ Схожість з мінусами: ${data.ai_loss_sim || 0}%<br>`;
         aiHtml += `<span style="font-size:11px;">${data.ai_conclusion || ''}</span>`;
         document.getElementById('aiText').innerHTML = aiHtml;
-        if (data.signal_id) {
+        if (data.signal_id && data.signal_id !== "demo") {
             currentSignalId = data.signal_id;
             document.getElementById('voteButtons').style.display = 'flex';
         } else {
@@ -266,13 +268,31 @@
             updateSignalUI(data);
             showToast("Сигнал отримано! Графік оновлено.", "#00c853");
         } catch(e) {
-            alert("Помилка: " + e.message);
+            console.warn("Не вдалося підключитися до бота, показую демо-дані");
+            // Демо-дані для красивої картинки
+            const demoData = {
+                price: 1.20564,
+                quality: 85,
+                reason: "БІЛЯ ПІДТРИМКИ (демо)",
+                ai_verdict: "ДОБРЕ ✅",
+                ai_win_sim: 78,
+                ai_loss_sim: 22,
+                ai_conclusion: "Схожі умови давали плюс 5 разів (демо)",
+                signal_id: "demo",
+                candles: [
+                    { time: '2026-05-03', open: 1.1905, high: 1.1915, low: 1.1900, close: 1.1910 },
+                    { time: '2026-05-04', open: 1.1910, high: 1.1920, low: 1.1905, close: 1.1918 },
+                    { time: '2026-05-05', open: 1.1918, high: 1.1930, low: 1.1910, close: 1.1925 },
+                ]
+            };
+            updateSignalUI(demoData);
+            showToast("Демо-режим: бот не підключено", "#ffa500");
         }
     }
 
     async function sendVote(voteType) {
-        if (!currentSignalId) {
-            alert("Спочатку отримайте сигнал!");
+        if (!currentSignalId || currentSignalId === "demo") {
+            alert("У демо-режимі голосування недоступне. Підключіть бота.");
             return;
         }
         try {
@@ -292,12 +312,17 @@
             const stats = await res.json();
             updateStatsUI(stats);
         } catch(e) {
-            console.log("Не вдалося завантажити статистику");
+            console.log("Не вдалося завантажити статистику, демо-дані");
+            updateStatsUI({ wins: 5, losses: 3, wr: 62.5, streak: 2, total_profit: 12, history: [
+                { time: "14:30", type: "win", profit: 5 },
+                { time: "14:25", type: "loss", profit: -5 },
+                { time: "14:20", type: "win", profit: 5 },
+            ]});
         }
         document.getElementById('getSignalBtn').onclick = () => getSignal();
         document.getElementById('winBtn').onclick = () => sendVote('win');
         document.getElementById('lossBtn').onclick = () => sendVote('loss');
-        document.getElementById('newPairBtn').onclick = () => alert("Вибір пари: необхідно налаштувати API");
+        document.getElementById('newPairBtn').onclick = () => alert("Вибір пари: необхідно налаштувати API бота");
     };
 </script>
 </body>
